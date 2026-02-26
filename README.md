@@ -77,14 +77,6 @@ This repository lets you either train (`train.py`), index (`index.py`), retrieve
 
 ## Getting started
 
-### Installation
-
-```
-pip install git+https://github.com/cwnu-airlab/Aura.git
-```
-
-<br>
-
 ### Requirements
 
 * We recommend starting from a fresh environment and installing the required packages via pip using the `requirements.txt` file.
