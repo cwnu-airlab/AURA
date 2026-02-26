@@ -1,0 +1,32 @@
+# FILES
+defaults: # (these specify which config FILES to use)
+  ############## TRAIN ###################################
+  - train/config: splade
+  - train/data: msmarco
+  - train/model: splade
+  ############## INDEX ###################################
+  - index: msmarco
+  ############## RETRIEVE ################################
+  - retrieve_evaluate: all
+  ############### FLOPS ##################################
+  - flops: msmarco
+
+# Direct PARAMETER setting
+config:
+  loss: InBatchPairwiseNLLWithCls
+  augment_pair: in_batch_negatives
+  info_step_based_scheduler:
+    lambda_cls: 1.0
+    T_mid: 50000
+  regularizer:
+    FLOPS:
+      idf_path: 'data/msmarco/idf/msmarco_idf.npy'
+      e: 1e-06
+      lambda_q: 0.0003
+      lambda_d: 0.0001
+      T: 50000
+      targeted_rep: rep
+      reg: FLOPS
+  checkpoint_dir: models/aura/checkpoint
+  index_dir: models/aura/index
+  out_dir: models/aura/out
