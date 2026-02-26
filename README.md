@@ -97,14 +97,14 @@ pip install -r requirements.txt
   * SPLADE data(queries, documents, hard negatives): [download](https://download.europe.naverlabs.com/splade/sigir22/data.tar.gz)
 
 * Additionally, to perform contrastive learning with BM25-hard negatives, you can use the following data:
-  * BM25-hard negatives: [download](https://download.europe.naverlabs.com/splade/sigir22/bm25_hard_negatives.tar.gz)
+  * BM25-hard negatives: [download](https://download.europe.naverlabs.com/splade/sigir22/triplets.tar.gz)
 
 
 <br>
 
 1.  After downloading the SPLADE data package, extract it in the project root directory.
 ```
-tar -xzvf file.tar.gz
+tar -xzvf data.tar.gz
 ```
 
 2. Then extract the BM25-hard negatives triplets in the `data/msmarco/triplets` directory.
