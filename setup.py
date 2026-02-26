@@ -4,10 +4,10 @@ with open('README.md') as f:
     readme = f.read()
 
 setup(
-    name='SPLADE',
-    version='2.1',
-    description='SParse Lexical AnD Expansion Model for First Stage Ranking',
-    url='https://github.com/naver/splade',
+    name='Aura',
+    version='0.1.0',
+    description='Alignment of Urban-semantic and Rare-lexical Attributes',
+    url='https://github.com/cwnu-airlab/Aura',
     classifiers=[
         'Intended Audience :: Science/Research',
         'Programming Language :: Python :: 3.7',
