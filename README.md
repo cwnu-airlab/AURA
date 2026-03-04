@@ -17,10 +17,12 @@ This repository contains the code to perform **training**, **indexing** and **re
 ## Method
 Aura is a neural retrieval model that builds on SPLADE-style sparse expansion while additionally incorporating a dense sementic signal. Specially, it learns query/document sparse representations through the BERT MLM head under sparsity regularization, and in parallel computes a dense representation to measure semantic similarity. To control sparsity more selectively, Aura introduces an IDF-weighted FLOPS regularizer that suppresses uninformative activations while emphasizing discriminative terms. Moreover, a training scheduler dynamically balances the dense retrieval objective and the IDF-FLOPS sparsity objective throughout optimization, stabilizing early training and encouraging an effective sparse–dense trade-off.
 
+This branch contains an implementation that applies the above method the MSE Distillation version.
+
 <br>
 
 **Usage**
-This repository lets you either train (`train.py`), index (`index.py`), retrieve (`retrieve.py`) (or perform every step with `all.py`) Aura models.
+This branch enables users to train a Aura model(MSE Distillation version) and perform document retrieval when applying the retriever to RAG pipeline.
 
 ***
 
@@ -81,7 +83,7 @@ This repository lets you either train (`train.py`), index (`index.py`), retrieve
 
 * We recommend starting from a fresh environment and installing the required packages via pip using the `requirements.txt` file.
 
-```
+```bash
 virtualenv venv --python=python3.9
 source venv/bin/activate
 pip install -r requirements.txt
@@ -91,85 +93,70 @@ pip install -r requirements.txt
 
 ### Data
 
-* We train our models using the [MS MARCO](https://github.com/microsoft/MSMARCO-Passage-Ranking) data.
+* In the SPLADE MSE Distillation version, training is performed using the [MS MARCO](https://github.com/microsoft/MSMARCO-Passage-Ranking) data.
 
-* For easier setup, you can use the data package provided by SPLADE:
-  * SPLADE data(queries, documents, hard negatives): [download](https://download.europe.naverlabs.com/splade/sigir22/data.tar.gz)
-
-* Additionally, to perform contrastive learning with BM25-hard negatives, you can use the following data:
-  * BM25-hard negatives: [download](https://download.europe.naverlabs.com/splade/sigir22/bm25_hard_negatives.tar.gz)
-
+* If a user wants to train the model with their own dataset, please follow the steps below.
 
 <br>
 
-1.  After downloading the SPLADE data package, extract it in the project root directory.
-```
-tar -xzvf file.tar.gz
-```
-
-2. Then extract the BM25-hard negatives triplets in the `data/msmarco/triplets` directory.
-```
-tar -xzvf triplets.tar.gz
+1.  Create a data directory in the `data` directory to store the `raw.tsv` file used for training.
+```bash
+mkdir data/<directory name>
 ```
 
-3. To run our code, an IDF `.npy` file is required. The path to this `.npy` file is not configured via the config files; instead, it is specified directly in `splade/loss/regularizer.py`. For convenience, the `.npy` file used in our method(IDF values computed from MS MARCO) is provided in `data/msmarco/msmarco_idf.npy`.
+2. Update the `TRAIN_DATA_DIR` path in the `config_aura_msedistil.yaml` file.
+
+
+3. Prepare a `.tsv` training file in the following format:
+```
+[query] \t [positive document] \t [negative document] \t [positive document score] \t [negative document score]
+```
 
 <br>
 
 ### Quick start (TRAIN)
 
-* Experiments are designed to run with **4 GPUs**.
-* You can adjust the alpha value by changing the `config.hybrid_alpha_list` parameter (`config.hybrid_alpha_list="[<your alpha value>]"`). You can also provide multiple values in the list to evaluate results for each alpha value.
-* To run the full pipeline (shown here with MSMARCO data using `config_aura.yaml`), move to the project root directory and execute:
-<!-- In order to perform all steps (here on toy data, i.e. `config_default.yaml`), go on the root directory and run: -->
+* You can use the code in `aura_msedistil.py` to intergrate the retriever into a RAG pipeline.
 
 ```bash
-export CUDA_VISIBLE_DEVICES=0,1,2,3
-SPLADE_CONFIG_NAME=config_aura 
-python -m splade.all config.checkpoint_dir=experiments/test/checkpoint   config.index_dir=experiments/test/index   config.out_dir=experiments/test/out +config.hybrid_alpha_list="[0.75]"  config.index_retrieve_batch_size=256  +config.dense_to_gpu=true  +config.dense_fp16=true +config.empty_cuda_cache_after_index=true +config.empty_cuda_cache_after_retrieve=true +config.dense_chunk_size=50000 +config.enable_minmax=true
+python aura_msedistil.py --mode train
 ```
 
 <br>
 
 ### Evaluating model
 
-* After training, indexing and retrieval will run automatically. If it does not run for any reason(e.g., insufficient GPU memory), please follow the steps below:
+* After training, you can use the code in `aura_msedistil.py` to retrieve the top-k documents for each query from your target dataset.
+
+* To perform document retrieval and evaluation using your trained model, you need to prepare the following 3 datasets in specific formats:
+
+1. Target Document Collection (Required for the `Index` step)
+- This is the entire set of documents to be searched.
+- It must be placed as a `raw.tsv` file under the directory specified by `COLLECTION_PATH`.
+- The format should be a 2-column structure: `[Document ID] \t [Document Text]`.
+
+2. Evaluation Query Collection (Required for the `Retrieve` step)
+- This is the set of queries the model will actually search for.
+- It must be placed as a `raw.tsv` file under the directory specified by `Q_COLLECTION_PATH`.
+- The format should be the same as the document collection, a 2-column structure: `[Query ID] \t [Query Text]`.
+
+3. Ground Truth File (Required for the `Evaluate` step)
+- This is the QREL (Query Relevance) file used to score the retrieval performance.
+- It must be a `.json` file located at the path specified by `EVAL_QREL_PATH`.
+- The JSON structure must be in the format `{"Query ID": {"Target Document ID": 1}}` to properly calculate performance metrics such as MRR and NDCG after retrieval.
+
+* You can load the trained model, run evaluation(indexing & retrieval), and check the results using the following command.
 
 ```bash
-export CUDA_VISIBLE_DEVICES=0,1,2,3
-SPLADE_CONFIG_FULLPATH="$(pwd)/experiments/test/checkpoint/config.yaml"
-python -m splade.index_retrieve  +config.hybrid_alpha_list="[0.75]"  config.index_retrieve_batch_size=256  config.dense_to_gpu=true  config.dense_fp16=true config.empty_cuda_cache_after_index=true config.empty_cuda_cache_after_retrieve=true config.dense_chunk_size=50000 config.enable_minmax=true
-``` 
-
-<br>
-
-* If you encounter a config-related error, please follow the steps below:
-1. Check if the config file exists.
-
-2. If config file exists, use the following command to check which config is currently being exported:
-```bash
-echo "SPLADE_CONFIG_NAME=$SPLADE_CONFIG_NAME"
-echo "SPLADE_CONFIG_FULLPATH=$SPLADE_CONFIG_FULLPATH"
+python aura_msedistil.py --mode eval
 ```
 
-3. If the exported config is not the one you want, please run the commands below to **unset** the current export and then export the correct config:
-```bash
-unset SPLADE_CONFIG_NAME
-unset SPLADE_CONFIG_FULLPATH
-
-export SPLADE_CONFIG_FULLPATH="$(pwd)/experiments/test/checkpoint/config.yaml"
-```
-
-<br>
-
-### BEIR eval
-
-You can also evaluate on the BEIR datasets using the following command (as in the in-domain evaluation, you can control the alpha value via `config.hybrid_alpha_list`)
+* After the evaluation is complete, if you only want to inspect the retrieval results, you can use the following command. The terminal will display the top documents for each query according to the number specified by the user as an argument.
 
 ```bash
-export SPLADE_CONFIG_FULLPATH="/path/to/checkpoint/dir/config.yaml"
-for dataset in arguana fiqa nfcorpus quora scidocs scifact trec-covid climate-fever dbpedia-entity fever hotpotqa nq; do   python -m splade.beir_eval     +beir.dataset=$dataset     +beir.dataset_path=datasets/beir     ++config.hybrid_alpha_list="[0.75]"     config.index_retrieve_batch_size=256  ++config.empty_cuda_cache_after_index=true   ++config.dense_fp16=true ++config.dense_to_gpu=true ++config.empty_cuda_cache_after_retrieve=true ++config.dense_chunk_size=50000 ++config.enable_minmax=true; done
+python aura_msedistil.py --mode results --top_k 10
 ```
+
 
 ***
 
