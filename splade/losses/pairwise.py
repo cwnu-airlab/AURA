@@ -41,14 +41,15 @@ class InBatchPairwiseNLLWithCls:
         self.logsoftmax = torch.nn.LogSoftmax(dim=1)
 
     def __call__(self, out_d):
-        in_batch_scores, neg_scores = out_d["pos_score"], out_d["neg_score"]
-        cls_in_batch_scores, cls_neg_scores = out_d["pos_score_cls"], out_d["neg_score_cls"]
+        in_batch_scores, neg_scores = out_d["pos_score"], out_d["neg_score"]    # size: torch.Size([batch_size, 1]) (train batch size: 128)
+        cls_in_batch_scores, cls_neg_scores = out_d["pos_score_cls"], out_d["neg_score_cls"]    # size: torch.Size([batch_size, 1]) (train batch size: 128)
 
         nb_columns = in_batch_scores.shape[1]
         nb_gpus = int(in_batch_scores.shape[0] / nb_columns)
         temp = torch.cat([in_batch_scores, neg_scores], dim=1)  # concat neg score from BM25 sampling
         cls_temp = torch.cat([cls_in_batch_scores, cls_neg_scores], dim=1)
         # shape (batch_size, batch_size/nb_gpus + 1)
+
         scores = self.logsoftmax(temp)
         cls_cores= self.logsoftmax(cls_temp)
         return torch.mean(-scores[torch.arange(in_batch_scores.shape[0]),
@@ -86,6 +87,26 @@ class DistilMarginMSE:
         margin = pos_scores - neg_scores
         teacher_margin = teacher_pos_scores - teacher_neg_scores
         return self.loss(margin.squeeze(), teacher_margin.squeeze())  # forces the margins to be similar
+
+class DistilMarginMSE_with_CLS:
+    def __init__(self):
+        self.loss = torch.nn.MSELoss()
+    
+    def __call__(self, out_d):
+        """out_d also contains scores from teacher
+        """
+        sparse_pos_scores, sparse_neg_scores = out_d["pos_score"], out_d["neg_score"]   # size: torch.Size([batch_size, 1]) (train batch size: 128)
+        cls_pos_scores, cls_neg_scores = out_d["pos_score_cls"], out_d["neg_score_cls"]   # size: torch.Size([batch_size, 1]) (train batch size: 128)
+        teacher_pos_scores, teacher_neg_scores = out_d["teacher_pos_score"], out_d["teacher_neg_score"]   # size: torch.Size([batch_size, 1]) (train batch size: 128)
+
+        sparse_margin = sparse_pos_scores - sparse_neg_scores   # size: torch.Size([batch_size, 1]) (train batch size: 128)
+        cls_margin = cls_pos_scores - cls_neg_scores   # size: torch.Size([batch_size, 1]) (train batch size: 128)
+        teacher_margin = teacher_pos_scores - teacher_neg_scores   # size: torch.Size([batch_size]) (train batch size: 128)
+        
+        sparse_loss = self.loss(sparse_margin.squeeze(), teacher_margin.squeeze())
+        cls_loss = self.loss(cls_margin.squeeze(), teacher_margin.squeeze())
+
+        return sparse_loss, cls_loss
 
 
 class DistilKLLoss:

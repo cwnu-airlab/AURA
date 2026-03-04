@@ -76,7 +76,7 @@ sacremoses==0.1.1
 safetensors==0.7.0
 scikit-learn==1.0.2
 scipy==1.13.1
-sentence-transformers==5.1.2
+sentence-transformers==2.2.2
 sentencepiece==0.1.96
 sgmllib3k==1.0.0
 shellingham==1.5.4

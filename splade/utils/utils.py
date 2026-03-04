@@ -11,7 +11,7 @@ from omegaconf import DictConfig, OmegaConf
 
 # from ..losses.contrastive import ClsInfoNCELoss, SparseClsCombinedLoss
 from ..losses.pairwise import (DistilKLLoss, DistilMarginMSE, InBatchPairwiseNLL, InBatchPairwiseNLLWithCls,
-                       PairwiseBPR, PairwiseNLL)
+                       PairwiseBPR, PairwiseNLL, DistilMarginMSE_with_CLS)
 from ..losses.pointwise import BCEWithLogitsLoss
 
 
@@ -196,23 +196,8 @@ def get_loss(config):
     ### change code ###
     elif config["loss"] == "InBatchPairwiseNLLWithCls":
         loss = InBatchPairwiseNLLWithCls()
-    # elif config["loss"] == "ClsInfoNCE":
-    #     temp = config.get("info_nce", {})
-    #     loss = ClsInfoNCELoss(
-    #         temperature=temp.get("temperature", 0.05),
-    #         normalize=temp.get("normalize", True),
-    #         include_triplet_negatives=temp.get("include_triplet_negatives", True),
-    #     )
-    # elif config["loss"] == "SparseClsInfoNCE":
-    #     print(f'config loss: SparseClsInfoNCE loss')
-    #     sparse_name = config.get("sparse_loss", "InBatchPairwiseNLL")
-    #     temp = config.get("info_sparse_cls", {})
-    #     loss = SparseClsCombinedLoss(
-    #         sparse_loss_name=sparse_name,
-    #         normalize=temp.get("normalize", True),
-    #         include_triplet_negatives=temp.get("include_triplet_negatives", True),
-    #     )
-    ### ---- ###
+    elif config["loss"] == "DistilMarginMSE_with_CLS":
+        loss = DistilMarginMSE_with_CLS()
     else:
         raise NotImplementedError("provide valid loss")
     return loss
