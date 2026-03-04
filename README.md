@@ -93,7 +93,7 @@ pip install -r requirements.txt
 
 ### Data
 
-* In the SPLADE MSE Distillation version, training is performed using the [MS MARCO](https://github.com/microsoft/MSMARCO-Passage-Ranking) data.
+* In the SPLADE MSE Distillation version, training is performed using the [(DistilMSE)](https://www.dropbox.com/s/sl07yvse3rlowxg/vienna_triplets.tar.gz?dl=0) data.
 
 * If a user wants to train the model with their own dataset, please follow the steps below.
 
