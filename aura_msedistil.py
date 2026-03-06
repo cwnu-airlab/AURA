@@ -42,23 +42,17 @@ def run_training():
     print("Starting Training (Evaluation Disabled)")
     print("="*50)
     
-    # Disable validation during training by overriding the config values
-    overrides = [
-        "data.VALIDATION_SIZE_FOR_LOSS=null", 
-        "data.VALIDATION_FULL_RANKING=null"
-    ]
+    cfg = init_hydra_config(config_name="config_aura_msedistil")
     
-    cfg = init_hydra_config(config_name="config_aura_msedistil", overrides=overrides)
-    
-    # Check if we successfully disabled validation
+    # Check current validation settings
     data_cfg = cfg.get("data", {})
     val_loss = data_cfg.get("VALIDATION_SIZE_FOR_LOSS", None)
     val_rank = data_cfg.get("VALIDATION_FULL_RANKING", None)
     
     if val_loss is None and val_rank is None:
-        print("Success: Validation settings are null. Training will run without evaluation.")
+        print("Note: Validation settings are null in config. Training will run without evaluation.")
     else:
-        print(f"Warning: Validation settings might not be null: {val_loss}, {val_rank}")
+        print(f"Note: Validation settings detected: loss_size={val_loss}, full_ranking={val_rank}")
         
     try:
         # Call the original train function directly, bypassing the @hydra.main decorator
