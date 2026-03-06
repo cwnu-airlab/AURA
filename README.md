@@ -24,6 +24,13 @@ This branch contains an implementation that applies the above method the MSE Dis
 **Usage**
 This branch enables users to train a Aura model(MSE Distillation version) and perform document retrieval when applying the retriever to RAG pipeline.
 
+
+## Install
+```bash
+git clone -b aura-mse-distil --signal-branch https://github.com/cwnu-airlab/Aura.git
+```
+
+
 ***
 
 <br>
